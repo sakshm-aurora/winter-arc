@@ -16,6 +16,6 @@ export default defineConfig({
   preview: {
     port: 3000,
     host: '0.0.0.0',
-    allowedHosts: ['winter-arc-frontend.up.railway.app']
+    allowedHosts: ['winter-arc.up.railway.app']
   }
 });
