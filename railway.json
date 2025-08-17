@@ -1,6 +1,17 @@
 {
     "$schema": "https://railway.app/railway.schema.json",
     "services": {
+      "frontend": {
+        "path": "frontend",
+        "build": {
+          "builder": "@railway/builders/node",
+          "buildCommand": "npm install && npm run build"
+        },
+        "deploy": {
+          "startCommand": "npm start",
+          "healthcheckPath": "/"
+        }
+      },
       "backend": {
         "path": "backend",
         "build": {

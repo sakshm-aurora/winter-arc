@@ -3,7 +3,9 @@ import axios from 'axios';
 
 // Create an Axios instance with default base URL pointing to backend
 const api = axios.create({
-  baseURL: 'http://localhost:3001',
+  baseURL: process.env.NODE_ENV === 'production' 
+    ? 'https://backend-production-71cd.up.railway.app' 
+    : 'http://localhost:3001',
 });
 
 const AuthContext = createContext();
