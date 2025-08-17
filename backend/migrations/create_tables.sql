@@ -1,0 +1,65 @@
+-- SQL script to create the necessary tables for the Winter Arc RPG app
+
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS quests (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  emoji TEXT,
+  category TEXT,
+  frequency TEXT,
+  target_value INTEGER,
+  comparison TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS invites (
+  id SERIAL PRIMARY KEY,
+  sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS battles (
+  id SERIAL PRIMARY KEY,
+  player1_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  player2_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  started_at TIMESTAMP DEFAULT NOW(),
+  status TEXT DEFAULT 'active'
+);
+
+CREATE TABLE IF NOT EXISTS battle_user_stats (
+  battle_id INTEGER NOT NULL REFERENCES battles(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  hp INTEGER DEFAULT 100,
+  xp INTEGER DEFAULT 0,
+  streak INTEGER DEFAULT 0,
+  PRIMARY KEY (battle_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS checkins (
+  id SERIAL PRIMARY KEY,
+  battle_id INTEGER NOT NULL REFERENCES battles(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  quest_id INTEGER NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
+  value INTEGER,
+  completed BOOLEAN,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS logs (
+  id SERIAL PRIMARY KEY,
+  battle_id INTEGER NOT NULL REFERENCES battles(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  log_text TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
