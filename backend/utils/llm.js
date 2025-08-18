@@ -98,14 +98,23 @@ async function generateBattleNarration(dateStr, playersData, options = {}) {
     summary += '\n';
   }
   
+  // Battle Conclusion
+  if (options.dailyWinner && options.dailyLoser) {
+    summary += `🏆 BATTLE RESULT: ${options.dailyWinner} defeats ${options.dailyLoser}!\n\n`;
+  } else if (options.dailyWinner) {
+    summary += `🏆 VICTOR: ${options.dailyWinner} wins by default!\n\n`;
+  } else if (bothSubmitted && !options.dailyWinner) {
+    summary += `🤝 TIE: Both warriors dealt equal damage!\n\n`;
+  }
+  
   // Narration Prompt
   summary += `Generate an epic, Winter Arc RPG battle narration based on this Day ${dayNumber} duel!`;
   if (onePlayerMissing) {
     summary += ` One warrior was absent - emphasize the disappointment and missed opportunity!`;
   } else {
-    summary += ` Both warriors clashed - describe the epic confrontation!`;
+    summary += ` Both warriors clashed - describe the epic confrontation! Show both players' attacks, defenses, and the battle flow between them.`;
   }
-  summary += ` Use emojis, winter themes, and RPG combat language. Keep it exciting and competitive!`;
+  summary += ` Use emojis, winter themes, and RPG combat language. Keep it exciting and competitive! Include battle dynamics between both players and conclude with current battle status.`;
   // Use OpenAI chat completion
   try {
     const completion = await openai.chat.completions.create({
@@ -113,11 +122,11 @@ async function generateBattleNarration(dateStr, playersData, options = {}) {
       messages: [
         {
           role: 'system',
-          content: 'You are a game narrator for a competitive RPG. Write in short, exciting sentences with emojis, as if narrating a battle log. Mention HP, XP, streaks, and describe successes and failures with playful moves.',
+          content: 'You are a game narrator for a competitive Winter Arc RPG battle. Create an exciting battle story showing both players\' actions, attacks, and interactions. Focus on battle dynamics between the warriors - how they clash, defend, counter-attack. Include their quest completions as battle moves, damage dealt as attacks, and conclude with battle aftermath. Use emojis, winter themes, and make it feel like an epic duel between both players.',
         },
         { role: 'user', content: summary },
       ],
-      max_tokens: 200,
+      max_tokens: 600,
       temperature: 0.8,
     });
     return completion.choices[0].message.content.trim();

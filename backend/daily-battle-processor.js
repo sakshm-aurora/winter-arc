@@ -251,18 +251,20 @@ class DailyBattleProcessor {
   async generateDailyBattleNarratives(processingDate) {
     console.log('📜 Generating daily battle narratives...');
 
-    // Get battles that need narratives (both players have submissions, no log exists)
+    // Get battles that need narratives (at least one player has submissions, no log exists)
     const battlesNeedingNarratives = await db.query(`
       SELECT DISTINCT b.id as battle_id, b.player1_id, b.player2_id
       FROM battles b
       WHERE b.status = 'active'
-      AND EXISTS (
-        SELECT 1 FROM checkins c1 
-        WHERE c1.battle_id = b.id AND c1.user_id = b.player1_id AND c1.date = $1
-      )
-      AND EXISTS (
-        SELECT 1 FROM checkins c2 
-        WHERE c2.battle_id = b.id AND c2.user_id = b.player2_id AND c2.date = $1
+      AND (
+        EXISTS (
+          SELECT 1 FROM checkins c1 
+          WHERE c1.battle_id = b.id AND c1.user_id = b.player1_id AND c1.date = $1
+        )
+        OR EXISTS (
+          SELECT 1 FROM checkins c2 
+          WHERE c2.battle_id = b.id AND c2.user_id = b.player2_id AND c2.date = $1
+        )
       )
       AND NOT EXISTS (
         SELECT 1 FROM logs l 
@@ -301,10 +303,43 @@ class DailyBattleProcessor {
       // Gather players data
       const playersData = await this.gatherPlayersData(battleId, processingDate, battle);
       
+      // Check if both players submitted
+      const player1Submitted = playersData[0]?.submitted_today || false;
+      const player2Submitted = playersData[1]?.submitted_today || false;
+      const bothSubmitted = player1Submitted && player2Submitted;
+      const onePlayerMissing = !bothSubmitted;
+      const missedPlayer = !player1Submitted ? playersData[0]?.name : !player2Submitted ? playersData[1]?.name : null;
+      
+      // Determine daily winner based on damage dealt
+      let dailyWinner = null;
+      let dailyLoser = null;
+      if (player1Submitted && player2Submitted) {
+        const player1Damage = playersData[0]?.today?.damage_dealt || 0;
+        const player2Damage = playersData[1]?.today?.damage_dealt || 0;
+        if (player1Damage > player2Damage) {
+          dailyWinner = playersData[0]?.name;
+          dailyLoser = playersData[1]?.name;
+        } else if (player2Damage > player1Damage) {
+          dailyWinner = playersData[1]?.name;
+          dailyLoser = playersData[0]?.name;
+        }
+        // If equal damage, it's a tie (no winner/loser)
+      } else if (player1Submitted && !player2Submitted) {
+        dailyWinner = playersData[0]?.name;
+        dailyLoser = playersData[1]?.name;
+      } else if (player2Submitted && !player1Submitted) {
+        dailyWinner = playersData[1]?.name;
+        dailyLoser = playersData[0]?.name;
+      }
+      
       // Generate narrative
       const logText = await generateBattleNarration(processingDate, playersData, {
         dayNumber,
-        bothSubmitted: true,
+        bothSubmitted,
+        onePlayerMissing,
+        missedPlayer,
+        dailyWinner,
+        dailyLoser,
         isScheduledProcessing: true
       });
 
